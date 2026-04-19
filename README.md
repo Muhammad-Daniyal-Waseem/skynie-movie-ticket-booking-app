@@ -45,5 +45,5 @@ https://fonts.google.com/specimen/Poppins?query=pop
 ## 📖 Documentation
 Detailed project documentation (including design explanation, workflow, and implementation details) is available here:
 
-👉 [https://your-documentation-link.com  ](https://docs.google.com/document/d/1BnVkYzMxbUyiMuibbtNmZGcoAwHCcHLLnMhfs1ztdZs/edit?usp=sharing)
+👉 [skynie-movie-ticket-booking-app-documentation](https://docs.google.com/document/d/1BnVkYzMxbUyiMuibbtNmZGcoAwHCcHLLnMhfs1ztdZs/edit?usp=sharing)
 
