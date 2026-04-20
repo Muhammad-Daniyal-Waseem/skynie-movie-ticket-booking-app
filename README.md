@@ -45,5 +45,10 @@ https://fonts.google.com/specimen/Poppins?query=pop
 ## 📖 Documentation
 Detailed project documentation (including design explanation, workflow, and implementation details) is available here:
 
-👉 [skynie-movie-ticket-booking-app-documentation](https://docs.google.com/document/d/1BnVkYzMxbUyiMuibbtNmZGcoAwHCcHLLnMhfs1ztdZs/edit?usp=sharing)
+[skynie-movie-ticket-booking-app-documentation](https://docs.google.com/document/d/1BnVkYzMxbUyiMuibbtNmZGcoAwHCcHLLnMhfs1ztdZs/edit?usp=sharing)
+
+## Figma Design
+👉 [figma](https://www.figma.com/design/WjotSP0GkFSCTqdvmZCNg9/Skynie---Movie-Ticket-Booking-App-UI-Kit--No-Image-?node-id=7201-5854&t=wewsDdjwQplVYop8-0)
+
+
 
