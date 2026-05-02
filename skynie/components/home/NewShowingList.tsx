@@ -1,4 +1,5 @@
 import { Image } from 'expo-image'
+import { Link } from 'expo-router'
 import React from 'react'
 import { FlatList, StyleSheet, TouchableOpacity, View } from 'react-native'
 
@@ -16,12 +17,14 @@ export default function NewShowingList() {
 
 function ListItem({ uri, onPress }: { uri: string, onPress: () => void }) {
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
-      <Image
-        source={{ uri }}
-        style={{ aspectRatio: "2/3", height: 400, borderRadius: 10 }}
-      />
-    </TouchableOpacity>
+    <Link href="/(stack)/FilmDetails" asChild>
+      <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
+        <Image
+          source={{ uri }}
+          style={{ aspectRatio: "2/3", height: 400, borderRadius: 10 }}
+        />
+      </TouchableOpacity>
+    </Link>
   )
 }
 
