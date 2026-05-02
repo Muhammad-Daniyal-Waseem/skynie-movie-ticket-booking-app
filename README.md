@@ -52,3 +52,6 @@ Detailed project documentation (including design explanation, workflow, and impl
 
 
 
+
+
+supabase db reset --linked
