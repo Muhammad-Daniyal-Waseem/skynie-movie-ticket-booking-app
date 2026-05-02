@@ -46,9 +46,9 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="tickets"
         options={{
-          title: 'Explore',
+          title: 'Tickets',
           tabBarIcon: ({ color, focused }) => <IconSymbol size={28} name={getIconName("ticket", focused)} color={color} />,
         }}
       />
