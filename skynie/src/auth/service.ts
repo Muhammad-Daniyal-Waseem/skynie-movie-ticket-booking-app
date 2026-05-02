@@ -45,9 +45,6 @@ export async function signUpWithEmailPassword(email: string, password: string) {
   const { data, error } = await client.auth.signUp({
     email,
     password,
-    options: {
-      emailRedirectTo: getAuthCallbackUrl(),
-    },
   });
 
   if (error) {

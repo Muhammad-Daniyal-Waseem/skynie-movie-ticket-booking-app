@@ -15,7 +15,7 @@ import AuthDivider from '@/components/auth/AuthDivider';
 import SocialAuthButton from '@/components/auth/SocialAuthButton';
 import CustomButton from '@/components/common/CustomButton';
 import CustomInput from '@/components/common/CustomInput';
-import { signUpWithEmailPassword } from '@/src/auth/service';
+import { signInWithEmailPassword, signUpWithEmailPassword } from '@/src/auth/service';
 import { Colors } from '@/constants/color';
 import { hasMinPasswordLength, isValidEmail, showValidationToast } from '@/src/utils/validation';
 
@@ -54,8 +54,16 @@ export default function SignUpScreen() {
         return;
       }
 
-      showValidationToast('Account created. Please verify your email before logging in.');
-      router.replace('/login');
+      // If signUp does not return a session, try sign in immediately.
+      try {
+        await signInWithEmailPassword(trimmedEmail, password);
+        showValidationToast('Account created successfully');
+        router.replace('/(tabs)');
+        return;
+      } catch {
+        showValidationToast('Account created successfully. Please log in.');
+        router.replace('/login');
+      }
     } catch (error) {
       showValidationToast(error instanceof Error ? error.message : 'Unable to sign up');
     } finally {
