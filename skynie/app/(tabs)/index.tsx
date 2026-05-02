@@ -1,21 +1,32 @@
+import ComingSoonList from '@/components/home/ComingSoonList'
+import GenreList from '@/components/home/GenreList'
+import HeroCarousel from '@/components/home/HeroCarousel'
 import NewShowingList from '@/components/home/NewShowingList'
+import OurPick from '@/components/home/OurPick'
 import { IconSymbol } from '@/components/ui/icon-symbol'
 import { Colors } from '@/constants/color'
 import React from 'react'
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 export default function index() {
   return (
-    <SafeAreaView>
-      <View style={{ margin: 100 }} />
-      <SectionHeading title='Now Showing' onMorePress={() => { }} />
-      <NewShowingList />
+    <SafeAreaView edges={['top']} >
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {/* <View style={{ margin: 100 }} /> */}
+        <HeroCarousel />
+        <SectionHeading title='Now Showing' onMorePress={() => { }} />
+        <NewShowingList />
 
 
-      <SectionHeading title='Coming Soon' onMorePress={() => { }} />
-      <SectionHeading title='Genres' onMorePress={() => { }} />
+        <SectionHeading title='Coming Soon' onMorePress={() => { }} />
+        <ComingSoonList />
 
+        <SectionHeading title='Genres' onMorePress={() => { }} />
+        <GenreList />
+
+        <OurPick />
+      </ScrollView>
     </SafeAreaView>
   )
 }
