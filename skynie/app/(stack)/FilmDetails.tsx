@@ -210,7 +210,6 @@ const styles = StyleSheet.create({
   footer: {
     width: '100%',
     padding: 10,
-    backgroundColor: '#121212',
     borderTopWidth: 1,
     borderTopColor: '#222'
   },
