@@ -63,9 +63,11 @@ export default function HeroCarousel() {
 
         {/* Top Icons */}
         <View style={styles.topBar}>
-          <TouchableOpacity style={styles.iconBtn}>
-            <Ionicons name="menu" size={24} color="white" />
-          </TouchableOpacity>
+          <Link href="/(stack)/OrderDetails" asChild>
+            <TouchableOpacity style={styles.iconBtn}>
+              <Ionicons name="menu" size={24} color="white" />
+            </TouchableOpacity>
+          </Link>
 
           <Link href="/(tabs)/search" asChild>
             <TouchableOpacity style={styles.iconBtn}>
