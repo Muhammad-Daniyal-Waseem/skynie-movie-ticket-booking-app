@@ -9,6 +9,7 @@ import {
   TouchableOpacity
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
+import { Link } from 'expo-router'
 
 const { width, height } = Dimensions.get('window')
 
@@ -66,9 +67,11 @@ export default function HeroCarousel() {
             <Ionicons name="menu" size={24} color="white" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.iconBtn}>
-            <Ionicons name="search" size={24} color="white" />
-          </TouchableOpacity>
+          <Link href="/(tabs)/search" asChild>
+            <TouchableOpacity style={styles.iconBtn}>
+              <Ionicons name="search" size={24} color="white" />
+            </TouchableOpacity>
+          </Link>
         </View>
 
         {/* Bottom Content */}
