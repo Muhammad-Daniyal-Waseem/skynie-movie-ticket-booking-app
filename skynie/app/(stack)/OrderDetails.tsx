@@ -1,17 +1,67 @@
-import React, { ComponentProps } from 'react';
+import React, { ComponentProps, useState } from 'react';
 import {
   StyleSheet,
   View,
   Text,
   TouchableOpacity,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { OrderDetailsScreenParams } from '@/supabase/api';
+import { formatTimeHHMM } from '@/utils';
+import { Image } from 'expo-image';
+import { getCurrentSession } from '@/src/auth/service';
+import { supabase } from '@/src/supabase/client';
+import { Colors } from '@/constants/color';
+import { showValidationToast } from '@/src/utils/validation';
 
 export default function OrderDetails() {
+  const { id, cinema, dateTime, hallName, hallType, langs, poster, title, ticketPrice, selectedSeats } = useLocalSearchParams<OrderDetailsScreenParams>();
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
+
+  const bookSeats = async () => {
+    try {
+      setLoading(true);
+      const session = await getCurrentSession()
+      const user = session?.user
+
+      if (!supabase || !user) return;
+      const body = {
+        show_id: id,
+        user_id: user.id,
+        total_amount: 1500,
+        seats: selectedSeats.split(",").map((seatId) => {
+          const row_label = seatId[0]; // "A1" -> "A"
+          const seat_number = parseInt(seatId.slice(1)); // "A1" -> 1
+
+          return { row_label, seat_number };
+        }),
+      }
+
+      const { data, error } = await supabase.functions.invoke('book-seats', {
+        method: 'POST',
+        body,
+      });
+
+      if (error) {
+        console.error('Booking error:', error);
+        return;
+      }
+
+      showValidationToast("Ticket(s) booked successfully")
+      router.replace('/(tabs)');
+      console.log('Booking success:', data);
+
+    } catch (err) {
+      console.error('Unexpected error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -29,58 +79,54 @@ export default function OrderDetails() {
       <ScrollView contentContainerStyle={styles.scrollBody}>
         {/* Movie Summary Card */}
         <View style={styles.movieCard}>
-          <View style={styles.posterPlaceholder} />
+          <Image source={{ uri: poster }} style={styles.posterPlaceholder} />
           <View style={styles.movieInfo}>
-            <Text style={styles.movieTitle}>Oppenheimer</Text>
+            <Text style={styles.movieTitle}>{title}</Text>
             <View style={styles.badgeRow}>
-              <View style={[styles.badge, { backgroundColor: '#2CC352' }]}>
-                <Text style={styles.badgeText}>+13</Text>
-              </View>
-              <View style={styles.badgeOutline}>
-                <Text style={styles.badgeText}>EN</Text>
-              </View>
-              <View style={styles.screenInfo}>
-                <Text style={styles.smallLabel}>ScreenX</Text>
-                <Text style={styles.smallLabel}>Dolby Atmos</Text>
-              </View>
+              {langs.split(",")?.map(lang => (
+                <View key={lang} style={styles.badgeOutline}><Text style={styles.badgeText}>{lang}</Text></View>
+              ))}
+              <View style={styles.badgeOutline}><Text style={styles.badgeText}>{hallType}</Text></View>
             </View>
           </View>
         </View>
 
         {/* Showtime Grid */}
         <View style={styles.gridRow}>
-          <GridItem icon="location-outline" label="Theater" value="Stars (90°Mall)" />
-          <GridItem icon="film-outline" label="film-outline" value="1st" />
-          <GridItem icon="calendar-outline" label="Date" value="13.04.2025" />
-          <GridItem icon="time-outline" label="Time" value="22:15" />
+          <GridItem icon="location-outline" label="Theater" value={cinema} />
+          <GridItem icon="film-outline" label="film-outline" value={hallName} />
+          <GridItem icon="calendar-outline" label="Date" value={new Date(dateTime).toDateString()} />
+          <GridItem icon="time-outline" label="Time" value={formatTimeHHMM(dateTime)} />
         </View>
 
         <View style={styles.divider} />
 
         {/* Tickets Section */}
         <SectionHeader title="Tickets" />
-        <LineItem label="Row E, Seat 5" price="16 USD" />
-        <LineItem label="Row E, Seat 6" price="16 USD" />
-        <LineItem label="Row E, Seat 7" price="16 USD" />
-
-        {/* Snacks Section (Smaks) */}
+        {
+          selectedSeats.split(",").map((seat, index) => (
+            <LineItem key={index} label={`Row ${seat[0]}, Seat ${seat[1]}`} price={`${ticketPrice} USD`} />
+          ))
+        }
+        {/* Snacks Section (Smaks)
         <SectionHeader title="Smaks" />
         <LineItem label="X2 Medium Solt Popcorn" price="16 USD" isSnack />
-        <LineItem label="X1 Larg Caramel Popcorn" price="16 USD" isSnack />
+        <LineItem label="X1 Larg Caramel Popcorn" price="16 USD" isSnack /> */}
 
         <View style={styles.divider} />
 
         {/* Total Section */}
         <View style={styles.totalRow}>
           <Text style={styles.totalLabel}>TOTAL</Text>
-          <Text style={styles.totalValue}>59.98 USD</Text>
+          <Text style={styles.totalValue}>{selectedSeats.split(",").length * Number(ticketPrice)} USD</Text>
         </View>
       </ScrollView>
 
       {/* Fixed Bottom Button */}
       <View style={styles.footer}>
         <View style={styles.divider} />
-        <TouchableOpacity style={styles.payBtn}>
+        <TouchableOpacity style={styles.payBtn} onPress={bookSeats} disabled={loading}>
+          {loading && <ActivityIndicator color={Colors.PRIMARY.red} />}
           <Text style={styles.payBtnText}>Pay</Text>
         </TouchableOpacity>
       </View>
@@ -132,7 +178,7 @@ const styles = StyleSheet.create({
   movieCard: { flexDirection: 'row', marginTop: 30, marginBottom: 30 },
   posterPlaceholder: { width: 85, height: 110, backgroundColor: '#D9D9D9', borderRadius: 10 },
   movieInfo: { marginLeft: 20, justifyContent: 'center' },
-  movieTitle: { color: 'white', fontSize: 22, fontWeight: 'bold', marginBottom: 10 },
+  movieTitle: { color: 'white', fontSize: 22, fontWeight: 'bold', marginBottom: 10, flexShrink: 1 },
   badgeRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 },
   badgeOutline: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4, borderWidth: 1, borderColor: '#555' },

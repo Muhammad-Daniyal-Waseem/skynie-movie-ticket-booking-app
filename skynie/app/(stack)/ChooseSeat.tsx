@@ -22,7 +22,7 @@ const rows = [
 ];
 
 export default function ChooseSeat() {
-  const { id, cinema, dateTime, hallName, hallType, langs, poster, title } = useLocalSearchParams<ChooseSeatScreenParams>();
+  const { id, cinema, dateTime, hallName, hallType, langs, poster, title, ticketPrice } = useLocalSearchParams<ChooseSeatScreenParams>();
   const router = useRouter();
 
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
@@ -202,7 +202,18 @@ export default function ChooseSeat() {
 
           <Link disabled={selectedSeats.length == 0} href={{
             pathname: "/(stack)/OrderDetails",
-            params: {}
+            params: {
+              title,
+              poster,
+              langs,
+              hallName,
+              hallType,
+              id,
+              cinema,
+              dateTime,
+              ticketPrice,
+              selectedSeats
+            }
           }} asChild>
             <TouchableOpacity style={styles.actionBtn}>
               <Text style={styles.actionText}>Proceed to Cash Out</Text>

@@ -61,4 +61,9 @@ export type ChooseSeatScreenParams = {
   hallType: string;
   dateTime: string;
   cinema: string;
+  ticketPrice: string;
+}
+
+export type OrderDetailsScreenParams = ChooseSeatScreenParams & {
+  selectedSeats: string
 }
