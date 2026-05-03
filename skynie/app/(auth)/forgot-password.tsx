@@ -12,7 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import AuthBackButton from '@/components/auth/AuthBackButton';
 import CustomButton from '@/components/common/CustomButton';
 import CustomInput from '@/components/common/CustomInput';
-import { sendRecoveryOtp } from '@/src/auth/service';
+import { sendPasswordResetEmail } from '@/src/auth/service';
 import { Colors } from '@/constants/color';
 import { useRouter } from 'expo-router';
 import { isValidEmail, showValidationToast } from '@/src/utils/validation';
@@ -32,14 +32,14 @@ export default function ForgotPasswordScreen() {
 
     try {
       setIsSubmitting(true);
-      await sendRecoveryOtp(trimmedEmail);
-      showValidationToast('OTP sent to your email');
+      await sendPasswordResetEmail(trimmedEmail);
+      showValidationToast('Password reset code sent to your email');
       router.push({
         pathname: '/verify-otp',
         params: { email: trimmedEmail },
       });
     } catch (error) {
-      showValidationToast(error instanceof Error ? error.message : 'Unable to send OTP');
+      showValidationToast(error instanceof Error ? error.message : 'Unable to send password reset code');
     } finally {
       setIsSubmitting(false);
     }
@@ -59,8 +59,7 @@ export default function ForgotPasswordScreen() {
 
           <View style={styles.body}>
             <Text style={styles.description}>
-              Enter the email associated with your account and we&apos;ll send an email with code to
-              reset your password
+              Enter the email associated with your account and we&apos;ll send an 8-digit password reset code.
             </Text>
 
             <CustomInput

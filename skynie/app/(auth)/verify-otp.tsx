@@ -18,7 +18,7 @@ import { verifyRecoveryOtp } from '@/src/auth/service';
 import { Colors } from '@/constants/color';
 import { showValidationToast } from '@/src/utils/validation';
 
-const OTP_LENGTH = 6;
+const OTP_LENGTH = 8;
 
 export default function VerifyOtpScreen() {
   const router = useRouter();
@@ -43,7 +43,7 @@ export default function VerifyOtpScreen() {
     }
 
     if (otp.length !== OTP_LENGTH) {
-      showValidationToast('Please enter the 6-digit OTP');
+      showValidationToast('Please enter the 8-digit OTP');
       return;
     }
 
@@ -76,7 +76,7 @@ export default function VerifyOtpScreen() {
 
           <View style={styles.body}>
             <Text style={styles.description}>
-              Enter your OTP which has been sent to your email and completely verify your account.
+              Enter the 8-digit password reset code sent to your email to continue.
             </Text>
 
             <Pressable style={styles.otpArea} onPress={() => inputRef.current?.focus()}>

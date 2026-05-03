@@ -26,13 +26,19 @@ export default function AuthCallbackScreen() {
 
       try {
         const result = await completeAuthFromUrl(incomingUrl);
-        setMessage('Email verified successfully');
-        showValidationToast(
-          result.type === 'signup'
-            ? 'Email confirmed successfully'
-            : 'Authentication completed successfully'
-        );
-        router.replace('/(tabs)');
+        if (result.type === 'recovery') {
+          setMessage('Password recovery ready');
+          showValidationToast('Please set a new password');
+          router.replace('/reset-password');
+        } else {
+          setMessage('Email verified successfully');
+          showValidationToast(
+            result.type === 'signup'
+              ? 'Email confirmed successfully'
+              : 'Authentication completed successfully'
+          );
+          router.replace('/(tabs)');
+        }
       } catch (error) {
         const messageText =
           error instanceof Error ? error.message : 'Unable to complete authentication';
