@@ -8,11 +8,12 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function FilmDetails() {
   const router = useRouter();
+  const { id } = useLocalSearchParams();
 
   return (
     <SafeAreaView style={styles.container}>
