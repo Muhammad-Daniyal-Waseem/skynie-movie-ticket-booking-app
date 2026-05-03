@@ -141,16 +141,18 @@ export default function BookTicket() {
           <Image source={{ uri: movie.poster_url || "" }} style={styles.posterPlaceholder} />
           <View style={styles.movieDetails}>
             <Text style={styles.movieGenre}>{movie.genres?.map(g => g.name).join(" • ")} • {getDuration(movie.duration_minutes)}</Text>
-            <Text style={styles.movieTitle}>{movie.title}</Text>
-            <View style={styles.badgeRow}>
-              {movie.languages?.map(lang => (
-                <View key={lang} style={styles.outlineBadge}><Text style={styles.badgeText}>{lang}</Text></View>
-              ))}
+            <Text style={styles.movieTitle} numberOfLines={2}>{movie.title}</Text>
+            <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+              <View style={styles.badgeRow}>
+                {movie.languages?.map(lang => (
+                  <View key={lang} style={styles.outlineBadge}><Text style={styles.badgeText}>{lang}</Text></View>
+                ))}
+              </View>
+              <TouchableOpacity style={styles.trailerBtn} onPress={handleOpenTrailer}>
+                <Ionicons name="play" size={16} color="black" />
+                <Text style={styles.trailerText}>Trailer</Text>
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity style={styles.trailerBtn} onPress={handleOpenTrailer}>
-              <Ionicons name="play" size={16} color="black" />
-              <Text style={styles.trailerText}>Trailer</Text>
-            </TouchableOpacity>
           </View>
         </View>
 
@@ -295,11 +297,12 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     padding: 16,
     marginVertical: 24,
+    alignItems: "stretch"
   },
   posterPlaceholder: {
     aspectRatio: "9/16",
-    height: "auto",
-    borderRadius: 18,
+    height: 150,
+    borderRadius: 10,
     backgroundColor: '#333',
   },
   movieDetails: {

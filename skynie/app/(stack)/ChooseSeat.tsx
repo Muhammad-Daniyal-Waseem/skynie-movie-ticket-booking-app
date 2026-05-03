@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   movieTitle: {
-    color: '#141414',
+    color: '#ccc',
     fontSize: 28,
     fontWeight: '800',
     textAlign: 'center',
