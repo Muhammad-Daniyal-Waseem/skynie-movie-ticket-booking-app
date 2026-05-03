@@ -1,4 +1,5 @@
-import React from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
+// import * as Location from 'expo-location';
 import {
   View,
   Text,
@@ -6,53 +7,156 @@ import {
   TextInput,
   FlatList,
   TouchableOpacity,
-  ScrollView
+  RefreshControl,
+  Linking,
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { Colors } from '@/constants/color'
-
-const filters = ['IMAX', 'GOLD', 'ScreenX', '4D MAX']
-
-const cinemas = [
-  {
-    id: '1',
-    name: 'Stars (90°Mall)',
-    address: '23 Sunny Boulevard, Sunshine City',
-    distance: '1.2km'
-  },
-  {
-    id: '2',
-    name: 'FilmHouse (Galaxy Plaza)',
-    address: '456 Starry Lane, Galaxy Town',
-    distance: '1.8km'
-  },
-  {
-    id: '3',
-    name: 'ReelMagic (Dreamland Center)',
-    address: '101 Paradise Parkway, Paradise City',
-    distance: '2.7km'
-  },
-  {
-    id: '4',
-    name: 'StarVista (Cosmo City Mall)',
-    address: '303 Ocean Drive, OceanView',
-    distance: '4.0km'
-  },
-  {
-    id: '5',
-    name: 'FlickPalace (Emerald Plaza)',
-    address: '505 Skyway Avenue, Skyline District',
-    distance: '5.2km'
-  }
-]
+import { supabase } from '@/src/supabase/client'
+import { CinemaWithHallTypes, SearchDataResponse } from '@/supabase/api'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import * as Location from 'expo-location';
+import Loader from '@/components/Loader'
+import { useRouter } from 'expo-router'
 
 export default function SearchScreen() {
+  const [allCinemas, setAllCinemas] = useState<CinemaWithHallTypes[]>([]);
+  const [allHallTypes, setAllHallTypes] = useState<string[]>([]);
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedHallTypes, setSelectedHallTypes] = useState<string[]>([]);
+
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const [userLocation, setUserLocation] = useState<{
+    lat: number;
+    lon: number;
+  } | null>(null);
+
+  const router = useRouter();
+
+  const getSearchScreenData = async () => {
+    try {
+      if (!supabase) return;
+      const { data, error } = await supabase.functions.invoke<SearchDataResponse>('get-all-cinema', {
+        method: 'GET',
+      });
+
+      if (error) {
+        console.error('Edge Function Error:', error);
+        throw error;
+      }
+
+      if (data) {
+        setAllCinemas(data.cinemas);
+        setAllHallTypes(data.allHallTypes)
+      }
+    } catch (err) {
+      console.error('Failed to fetch home data:', err);
+    }
+  };
+
+  useEffect(() => {
+    getSearchScreenData().then(() => setLoading(false));
+    getUserLocation();
+  }, [])
+
+  const getUserLocation = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+
+      if (status !== 'granted') {
+        console.log('Permission denied');
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({});
+
+      setUserLocation({
+        lat: location.coords.latitude,
+        lon: location.coords.longitude,
+      });
+    } catch (err) {
+      console.error('Location error:', err);
+    }
+  };
+
+  const filteredCinemas = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+
+    let result = allCinemas
+      .map(cinema => {
+        if (!userLocation || !cinema.location_lat || !cinema.location_long) {
+          return { ...cinema, distance: null };
+        }
+
+        const distance = calculateDistance(
+          userLocation.lat,
+          userLocation.lon,
+          cinema.location_lat,
+          cinema.location_long
+        );
+
+        return {
+          ...cinema,
+          distance,
+        };
+      })
+      .filter(cinema => {
+        const matchesSearch =
+          !q || cinema.name.toLowerCase().includes(q);
+
+        const matchesHall =
+          selectedHallTypes.length === 0 ||
+          cinema.hall_types.some(type =>
+            selectedHallTypes.includes(type)
+          );
+
+        return matchesSearch && matchesHall;
+      });
+
+    // 📍 Optional: sort by distance
+    if (userLocation) {
+      result.sort((a, b) => {
+        if (a.distance == null) return 1;
+        if (b.distance == null) return -1;
+        return a.distance - b.distance;
+      });
+    }
+
+    return result;
+  }, [allCinemas, searchQuery, selectedHallTypes, userLocation]);
+
+  const toggleHallType = (type: string) => {
+    setSelectedHallTypes(prev =>
+      prev.includes(type)
+        ? prev.filter(t => t !== type) // remove
+        : [...prev, type]              // add
+    );
+  };
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await getSearchScreenData();
+    setRefreshing(false);
+  }, []);
+
+  const openMap = (lat: number, lon: number) => {
+    const url = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
+
+    Linking.openURL(url);
+  };
+
+  if (loading)
+    return <Loader />
+
   return (
-    <View style={{ flex: 1, paddingHorizontal: 10, paddingTop: 50 }}>
+    <SafeAreaView edges={["top"]} style={{ paddingHorizontal: 10, }}>
 
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.iconBtn}>
+        <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={22} color="white" />
         </TouchableOpacity>
 
@@ -69,40 +173,43 @@ export default function SearchScreen() {
         <TextInput
           placeholder="Search"
           placeholderTextColor="#aaa"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
           style={{ marginLeft: 10, color: 'white', flex: 1 }}
         />
       </View>
 
-      {/* Filters */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 15 }}>
-        {filters.map((item, index) => (
-          <TouchableOpacity
-            key={index}
-            style={[
-              styles.chip,
-              index === 0 && styles.activeChip
-            ]}
-          >
-            <Text
-              style={[
-                styles.chipText,
-                index === 0 && styles.activeChipText
-              ]}
-            >
-              {item}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
       {/* List */}
       <FlatList
-        data={cinemas}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={Colors.PRIMARY.red} // iOS spinner color
+            colors={[Colors.PRIMARY.red]}   // Android spinner colors
+          />
+        }
+        ListHeaderComponent={
+          <FlatList
+            data={allHallTypes}
+            horizontal
+            style={{ marginVertical: 10 }}
+            showsHorizontalScrollIndicator={false}
+            renderItem={({ item }) => (
+              <Chip
+                label={item}
+                selected={selectedHallTypes.includes(item)}
+                onPress={() => toggleHallType(item)}
+              />
+            )}
+          />
+        }
+        data={filteredCinemas}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
-          <TouchableOpacity style={styles.card}>
+          <TouchableOpacity style={styles.card} onPress={() => openMap(item.location_lat!, item.location_long!)}>
             <View style={{ flex: 1 }}>
               <Text style={styles.cinemaName}>{item.name}</Text>
 
@@ -110,7 +217,11 @@ export default function SearchScreen() {
                 <Ionicons name="location" size={14} color="#888" />
                 <Text style={styles.address}>
                   {item.address}{' '}
-                  <Text style={styles.distance}>{item.distance}</Text>
+                  <Text style={styles.distance}>
+                    {item.distance != null
+                      ? `${item.distance.toFixed(1)} km`
+                      : ''}
+                  </Text>
                 </Text>
               </View>
             </View>
@@ -120,9 +231,33 @@ export default function SearchScreen() {
         )}
       />
 
-    </View>
+    </SafeAreaView>
   )
 }
+
+
+const Chip = ({ label, selected, onPress }: { label: string, selected: boolean, onPress: () => void }) => {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.8}
+      style={[
+        styles.chip,
+        selected && styles.chipActive
+      ]}
+    >
+      <Text
+        style={[
+          styles.chipText,
+          selected && styles.chipTextActive
+        ]}
+        numberOfLines={1}
+      >
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+};
 
 const styles = StyleSheet.create({
   header: {
@@ -156,27 +291,6 @@ const styles = StyleSheet.create({
     marginTop: 20
   },
 
-  chip: {
-    backgroundColor: '#2a2a2a',
-    paddingHorizontal: 15,
-    borderRadius: 5,
-    marginRight: 10
-  },
-
-  activeChip: {
-    backgroundColor: 'red'
-  },
-
-  chipText: {
-    marginVertical: 8,
-    color: '#ccc'
-  },
-
-  activeChipText: {
-    color: 'white',
-    fontWeight: '600'
-  },
-
   card: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -208,4 +322,46 @@ const styles = StyleSheet.create({
     color: '#00e676',
     fontWeight: '600'
   },
+
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.NEUTRAL.darkGrey3,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignSelf: 'flex-start',
+    margin: 4,
+  },
+
+  chipActive: {
+    backgroundColor: Colors.PRIMARY.red,
+  },
+
+  chipText: {
+    color: '#ccc',
+    fontSize: 14,
+  },
+
+  chipTextActive: {
+    color: 'white',
+    fontWeight: '600',
+  },
+
 })
+
+
+const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+  const R = 6371; // Earth's radius in km
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c; // Distance in km
+};
