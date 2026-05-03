@@ -6,9 +6,35 @@ export type Cinema = Database['public']['Tables']['cinemas']['Row'];
 export type Hall = Database['public']['Tables']['halls']['Row'];
 export type Shows = Database['public']['Tables']['shows']['Row'];
 export type Seat = Database['public']['Tables']['seats']['Row'];
+export type Booking = Database['public']['Tables']['bookings']['Row'];
+export type BookedSeat = Database['public']['Tables']['booked_seats']['Row'];
 
 export interface MovieWithGenres extends Movie {
   genres: Genre[]
+}
+
+export interface UserBooking {
+  id: string;
+  movieTitle: string;
+  moviePoster: string | null;
+  movieClassification: string | null;
+  cinemaName: string;
+  cinemaAddress: string | null;
+  hallName: string;
+  hallType: string | null;
+  startTime: string;
+  basePrice: number;
+  totalAmount: number;
+  seats: Array<{
+    id: string;
+    rowLabel: string;
+    seatNumber: number;
+  }>;
+  bookedAt: string;
+}
+
+export interface GetUserBookingsResponse {
+  bookings: UserBooking[];
 }
 
 export interface HomeDataResponse {
