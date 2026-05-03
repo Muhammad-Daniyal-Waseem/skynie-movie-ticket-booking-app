@@ -112,7 +112,7 @@ export default function ProfileScreen() {
   )
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -187,7 +187,6 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.PRIMARY.black,
   },
   flex: {
     flex: 1,
@@ -195,7 +194,6 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 28,
   },
   pageTitle: {
     color: Colors.PRIMARY.white,
