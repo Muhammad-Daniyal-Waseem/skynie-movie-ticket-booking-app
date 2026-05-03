@@ -181,6 +181,7 @@ export default function BookTicket() {
                     hallType: show.halls.hall_type,
                     dateTime: show.start_time,
                     cinema: show.halls.cinemas.name,
+                    ticketPrice: show.base_price_usd
                   }
                 }}
               >
