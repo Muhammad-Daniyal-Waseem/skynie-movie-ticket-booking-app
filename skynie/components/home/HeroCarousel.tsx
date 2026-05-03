@@ -10,39 +10,32 @@ import {
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { Link } from 'expo-router'
+import { Movie } from '@/supabase/api'
+import { Colors } from '@/constants/color'
+import * as WebBrowser from 'expo-web-browser';
 
 const { width, height } = Dimensions.get('window')
 
-const DATA = [
-  {
-    id: '1',
-    title: 'New Arrival',
-    subtitle: 'NEW • Mystery • PG-13 • 1h 56m',
-    image: 'https://image.tmdb.org/t/p/w1280/9cqNxx0GxF0bflZmeSMuL5tnGzr.jpg'
-  },
-  {
-    id: '2',
-    title: 'The Batman',
-    subtitle: 'Action • Crime • 2h 56m',
-    image: 'https://image.tmdb.org/t/p/w1280/74xTEgt7R36Fpooo50r9T25onhq.jpg'
-  },
-  {
-    id: '3',
-    title: 'Interstellar',
-    subtitle: 'Sci-Fi • Drama • 2h 49m',
-    image: 'https://image.tmdb.org/t/p/w1280/rAiYTfKGqDCRIIqo664sY9XZIvQ.jpg'
-  }
-]
-
-export default function HeroCarousel() {
+export default function HeroCarousel({ data }: { data: Movie[] }) {
   const [index, setIndex] = useState(0)
+
+  const handleOpenTrailer = async () => {
+    const url = data[index]?.trailer_url;
+    if (url) {
+      await WebBrowser.openBrowserAsync(url);
+    }
+  };
+
+  if (data.length == 0) {
+    return null;
+  }
 
   return (
     <View style={{ height: height * 0.7 }}>
 
       {/* 🔥 IMAGE CAROUSEL ONLY */}
       <FlatList
-        data={DATA}
+        data={data}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
@@ -52,7 +45,7 @@ export default function HeroCarousel() {
         }}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <ImageBackground source={{ uri: item.image }} style={styles.image}>
+          <ImageBackground source={{ uri: item.poster_url || '' }} style={styles.image}>
             <View style={styles.overlay} />
           </ImageBackground>
         )}
@@ -63,11 +56,9 @@ export default function HeroCarousel() {
 
         {/* Top Icons */}
         <View style={styles.topBar}>
-          <Link href="/(stack)/OrderDetails" asChild>
-            <TouchableOpacity style={styles.iconBtn}>
-              <Ionicons name="menu" size={24} color="white" />
-            </TouchableOpacity>
-          </Link>
+          <TouchableOpacity style={styles.iconBtn}>
+            <Ionicons name="menu" size={24} color="white" />
+          </TouchableOpacity>
 
           <Link href="/(tabs)/search" asChild>
             <TouchableOpacity style={styles.iconBtn}>
@@ -78,16 +69,11 @@ export default function HeroCarousel() {
 
         {/* Bottom Content */}
         <View style={styles.centerContent}>
-          <View style={styles.newBadge}>
-            <Text style={styles.newText}>New</Text>
-          </View>
-
-          <Text style={styles.title}>{DATA[index].title}</Text>
-          <Text style={styles.subtitle}>{DATA[index].subtitle}</Text>
+          <Text style={styles.title}>{data[index].title}</Text>
 
           {/* Dots */}
           <View style={styles.dots}>
-            {DATA.map((_, i) => (
+            {data.map((_, i) => (
               <View
                 key={i}
                 style={[
@@ -104,14 +90,21 @@ export default function HeroCarousel() {
               <Ionicons name="add" size={22} color="white" />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.trailerBtn}>
+            <TouchableOpacity style={styles.trailerBtn} onPress={handleOpenTrailer}>
               <Ionicons name="play" size={18} color="black" />
               <Text style={styles.trailerText}>Trailer</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.circleBtn}>
-              <Ionicons name="information" size={22} color="white" />
-            </TouchableOpacity>
+            <Link
+              href={{
+                pathname: "/(stack)/FilmDetails",
+                params: { id: data[index]?.id }
+              }}
+              asChild>
+              <TouchableOpacity style={styles.circleBtn}>
+                <Ionicons name="information" size={22} color="white" />
+              </TouchableOpacity>
+            </Link>
           </View>
         </View>
 
@@ -123,7 +116,8 @@ export default function HeroCarousel() {
 const styles = StyleSheet.create({
   image: {
     width,
-    height: '100%'
+    height: '100%',
+    backgroundColor: Colors.NEUTRAL.darkGrey
   },
 
   overlay: {
@@ -174,7 +168,8 @@ const styles = StyleSheet.create({
   title: {
     color: 'white',
     fontSize: 28,
-    fontWeight: 'bold'
+    fontWeight: 'bold',
+    textAlign: "center"
   },
 
   subtitle: {
