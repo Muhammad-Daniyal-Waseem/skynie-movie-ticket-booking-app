@@ -73,7 +73,7 @@ export default function TicketDetails() {
             </View>
 
             <View style={styles.movieRow}>
-              <Image source={{ uri: ticketData?.moviePoster || "" }} style={styles.posterPlaceholder} />
+              <Image source={{ uri: (params.moviePoster as string) || "" }} style={styles.posterPlaceholder} />
               <View style={styles.movieMeta}>
                 <Text style={styles.movieName}>{ticketData.movieTitle}</Text>
                 <View style={styles.movieFlagsRow}>
