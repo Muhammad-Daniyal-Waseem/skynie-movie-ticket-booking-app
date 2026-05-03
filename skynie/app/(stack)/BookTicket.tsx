@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/color';
 import { supabase } from '@/src/supabase/client';
@@ -167,24 +167,40 @@ export default function BookTicket() {
                 : '#D9D900';
 
             return (
-              <TouchableOpacity
-                key={show.id}
+              <Link disabled={disabled} asChild
                 style={[styles.showtimeCard, active && styles.activeShowtimeCard, disabled && styles.disabledShowtimeCard]}
-                onPress={() => !disabled && router.push('./ChooseSeat')}
-                disabled={disabled}
+                key={show.id}
+                href={{
+                  pathname: '/(stack)/ChooseSeat',
+                  params: {
+                    id: show.id,
+                    title: movie.title,
+                    poster: movie.poster_url,
+                    langs: movie.languages,
+                    hallName: show.halls.hall_name,
+                    hallType: show.halls.hall_type,
+                    dateTime: show.start_time,
+                    cinema: show.halls.cinemas.name,
+                  }
+                }}
               >
-                <View style={styles.cardHeader}>
-                  <Text style={styles.cardType}>{show.halls.cinemas.name}</Text>
-                  <Text style={styles.cardAudio}>{show.halls.hall_type}</Text>
-                </View>
-                <Text style={[styles.showtimeText, disabled && styles.disabledText, disabled && styles.lineThrough]}>{formatTimeHHMM(show.start_time)}</Text>
-                <View>
-                  <Text style={[styles.hallText, disabled && styles.disabledText]}>{show.halls.hall_name}</Text>
-                  <Text style={[styles.availabilityText, { color: availableColor }]}>
-                    {show.booked_seats_count > 0 ? `${show.booked_seats_count} Available / ${show.halls.total_capacity}` : `${show.booked_seats_count} / ${show.halls.total_capacity}`}
-                  </Text>
-                </View>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => !disabled && router.push('./ChooseSeat')}
+                  disabled={disabled}
+                >
+                  <View style={styles.cardHeader}>
+                    <Text style={styles.cardType}>{show.halls.cinemas.name}</Text>
+                    <Text style={styles.cardAudio}>{show.halls.hall_type}</Text>
+                  </View>
+                  <Text style={[styles.showtimeText, disabled && styles.disabledText, disabled && styles.lineThrough]}>{formatTimeHHMM(show.start_time)}</Text>
+                  <View>
+                    <Text style={[styles.hallText, disabled && styles.disabledText]}>{show.halls.hall_name}</Text>
+                    <Text style={[styles.availabilityText, { color: availableColor }]}>
+                      {show.booked_seats_count > 0 ? `${show.booked_seats_count} Available / ${show.halls.total_capacity}` : `${show.booked_seats_count} / ${show.halls.total_capacity}`}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              </Link>
             );
           })}
         </View>
