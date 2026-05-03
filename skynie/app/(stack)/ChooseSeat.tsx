@@ -1,8 +1,14 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { supabase } from '@/src/supabase/client';
+import { ChooseSeatScreenParams, GetBookedSeatsResponse } from '@/supabase/api';
+import { formatTimeHHMM } from '@/utils';
+import { Image, ImageBackground } from 'expo-image';
+import { Colors } from '@/constants/color';
+import Loader from '@/components/Loader';
 
 const rows = [
   { label: 'A', seats: 6 },
@@ -15,11 +21,22 @@ const rows = [
   { label: 'H', seats: 6 },
 ];
 
-const bookedSeats = new Set([ 'A2', 'A5', 'B3', 'C6', 'D2', 'E4', 'F7', 'G5', 'H1', 'H6' ]);
-
 export default function ChooseSeat() {
+  const { id, cinema, dateTime, hallName, hallType, langs, poster, title } = useLocalSearchParams<ChooseSeatScreenParams>();
   const router = useRouter();
+
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
+  const [bookedSeats, setBookedSeats] = useState<GetBookedSeatsResponse['seats']>([])
+
+  const [loading, setLoading] = useState(false);
+
+  const bookedSeatSet = useMemo(() => {
+    return new Set(
+      bookedSeats.map(
+        (s) => `${s.row_label}${s.seat_number}`
+      )
+    );
+  }, [bookedSeats]);
 
   const seatRows = useMemo(() => {
     return rows.map((row) => {
@@ -30,7 +47,8 @@ export default function ChooseSeat() {
         return {
           id,
           row: row.label,
-          status: bookedSeats.has(id) ? 'booked' : 'available' as const,
+          seatNumber: index + 1,
+          status: bookedSeatSet.has(id) ? 'booked' : 'available' as const,
         };
       });
       const rightSeats = Array.from({ length: rightCount }, (_, index) => {
@@ -38,12 +56,33 @@ export default function ChooseSeat() {
         return {
           id,
           row: row.label,
-          status: bookedSeats.has(id) ? 'booked' : 'available' as const,
+          seatNumber: index + 1,
+          status: bookedSeatSet.has(id) ? 'booked' : 'available' as const,
         };
       });
       return { ...row, leftSeats, rightSeats };
     });
-  }, []);
+  }, [bookedSeats]);
+
+  const getShowsData = async () => {
+    try {
+      if (!supabase || !id) return;
+      const { data, error } = await supabase.functions.invoke<GetBookedSeatsResponse>(`get-booked-seats?show_id=${id}`, {
+        method: 'GET',
+      });
+
+      if (error) {
+        console.error('Edge Function Error:', error);
+        throw error;
+      }
+
+      if (data) {
+        setBookedSeats(data.seats);
+      }
+    } catch (err) {
+      console.error('Failed to data:', err);
+    }
+  };
 
   const toggleSeat = (seatId: string, status: string) => {
     if (status === 'booked') return;
@@ -51,103 +90,125 @@ export default function ChooseSeat() {
       if (current.includes(seatId)) {
         return current.filter((id) => id !== seatId);
       }
-      if (current.length >= 4) return current;
+      // if (current.length >= 4) return current;
       return [...current, seatId];
     });
   };
+
+  useEffect(() => {
+    setLoading(true)
+    getShowsData().then(() => setLoading(false));
+  }, [id])
+
+  if (loading)
+    return <Loader />
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.topSection}>
-          <View style={styles.topIconsRow}>
-            <TouchableOpacity style={styles.topIconCircle} onPress={() => router.back()}>
-              <Ionicons name="chevron-back" size={20} color="#141414" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.topIconCircle}>
-              <Ionicons name="heart-outline" size={20} color="#141414" />
-            </TouchableOpacity>
-          </View>
-
-          <Text style={styles.movieTitle}>Oppenheimer</Text>
-
-          <View style={styles.badgeRow}>
-            <View style={styles.ratingBadge}>
-              <Text style={styles.ratingText}>+13</Text>
+          <Image source={{ uri: poster }} style={{ width: '100%', height: '100%', position: "absolute", inset: 0 }} />
+          <View style={{ width: '100%', height: '100%', position: "absolute", inset: 0, backgroundColor: "black", opacity: 0.5 }} />
+          <View style={{
+            paddingTop: 14,
+            paddingBottom: 24,
+            paddingHorizontal: 18,
+            marginBottom: 12,
+          }}>
+            <View style={styles.topIconsRow}>
+              <TouchableOpacity style={styles.topIconCircle} onPress={() => router.back()}>
+                <Ionicons name="chevron-back" size={20} color="#141414" />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.topIconCircle}>
+                <Ionicons name="heart-outline" size={20} color="#141414" />
+              </TouchableOpacity>
             </View>
-            <View style={styles.outlineBadge}>
-              <Text style={styles.badgeText}>EN</Text>
-            </View>
-            <View style={styles.outlineBadge}>
-              <Text style={styles.badgeText}>ScreenX</Text>
-            </View>
-          </View>
 
-          <View style={styles.summaryRow}>
-            <InfoBlock icon="location-outline" label="Theater" value="Stars (90°Mall)" />
-            <InfoBlock icon="cube-outline" label="Hall" value="1st" />
-            <InfoBlock icon="calendar-outline" label="Date" value="13.04.2025" />
-            <InfoBlock icon="time-outline" label="Time" value="22:15" />
-          </View>
-        </View>
+            <Text style={styles.movieTitle}>{title}</Text>
 
-        <View style={styles.screenWrapper}>
-          <View style={styles.screenRow} />
-          <Text style={styles.screenLabel}>SCREEN</Text>
-        </View>
-
-        <View style={styles.seatMap}>
-          {seatRows.map((row) => (
-            <View key={row.label} style={styles.rowBlock}>
-              <Text style={styles.rowLabel}>{row.label}</Text>
-              <View style={styles.sideRow}>
-                {row.leftSeats.map((seat) => {
-                  const selected = selectedSeats.includes(seat.id);
-                  return (
-                    <TouchableOpacity
-                      key={seat.id}
-                      style={[
-                        styles.seat,
-                        seat.status === 'booked' && styles.bookedSeat,
-                        selected && styles.selectedSeat,
-                      ]}
-                      onPress={() => toggleSeat(seat.id, seat.status)}
-                      disabled={seat.status === 'booked'}
-                    />
-                  );
-                })}
+            <View style={styles.badgeRow}>
+              {langs.split(",")?.map(lang => (
+                <View key={lang} style={styles.outlineBadge}><Text style={styles.badgeText}>{lang}</Text></View>
+              ))}
+              <View style={styles.outlineBadge}>
+                <Text style={styles.badgeText}>{hallType}</Text>
               </View>
-              <View style={styles.sideRow}>
-                {row.rightSeats.map((seat) => {
-                  const selected = selectedSeats.includes(seat.id);
-                  return (
-                    <TouchableOpacity
-                      key={seat.id}
-                      style={[
-                        styles.seat,
-                        seat.status === 'booked' && styles.bookedSeat,
-                        selected && styles.selectedSeat,
-                      ]}
-                      onPress={() => toggleSeat(seat.id, seat.status)}
-                      disabled={seat.status === 'booked'}
-                    />
-                  );
-                })}
-              </View>
-              <Text style={styles.rowLabel}>{row.label}</Text>
             </View>
-          ))}
+
+            <View style={styles.summaryRow}>
+              <InfoBlock icon="location-outline" label="Theater" value={cinema} />
+              <InfoBlock icon="cube-outline" label="Hall" value={hallName} />
+              <InfoBlock icon="calendar-outline" label="Date" value={new Date(dateTime).toDateString()} />
+              <InfoBlock icon="time-outline" label="Time" value={formatTimeHHMM(dateTime)} />
+            </View>
+          </View>
         </View>
 
-        <View style={styles.legendRow}>
-          <LegendDot color="#EE5959" label="Booked" />
-          <LegendDot color="#00C851" label="Yours" />
-          <LegendDot color="#333" label="Available" outline />
-        </View>
+        <View style={{ paddingHorizontal: 10 }}>
+          <View style={styles.screenWrapper}>
+            <View style={styles.screenRow} />
+            <Text style={styles.screenLabel}>SCREEN</Text>
+          </View>
 
-        <TouchableOpacity style={styles.actionBtn} onPress={() => router.push('./OrderDetails')}>
-          <Text style={styles.actionText}>Proceed to Cash Out</Text>
-        </TouchableOpacity>
+          <View style={styles.seatMap}>
+            {seatRows.map((row, index) => (
+              <View key={row.label} style={styles.rowBlock}>
+                <Text style={styles.rowLabel}>{row.label}</Text>
+                <View style={[styles.sideRow, { justifyContent: "flex-end" }]}>
+                  {row.leftSeats.map((seat) => {
+                    const selected = selectedSeats.includes(seat.id);
+                    return (
+                      <TouchableOpacity
+                        key={seat.id}
+                        style={[
+                          styles.seat,
+                          seat.status === 'booked' && styles.bookedSeat,
+                          selected && styles.selectedSeat,
+                        ]}
+                        onPress={() => toggleSeat(seat.id, seat.status)}
+                        disabled={seat.status === 'booked'}
+                      />
+                    );
+                  })}
+                </View>
+                <View style={{ width: 26 }} />
+                <View style={[styles.sideRow, { justifyContent: "flex-start" }]}>
+                  {row.rightSeats.map((seat) => {
+                    const selected = selectedSeats.includes(seat.id);
+                    return (
+                      <TouchableOpacity
+                        key={seat.id}
+                        style={[
+                          styles.seat,
+                          seat.status === 'booked' && styles.bookedSeat,
+                          selected && styles.selectedSeat,
+                        ]}
+                        onPress={() => toggleSeat(seat.id, seat.status)}
+                        disabled={seat.status === 'booked'}
+                      />
+                    );
+                  })}
+                </View>
+                <Text style={styles.rowLabel}>{row.label}</Text>
+              </View>
+            ))}
+          </View>
+
+          <View style={styles.legendRow}>
+            <LegendDot color="#EE5959" label="Booked" />
+            <LegendDot color="#00C851" label="Yours" />
+            <LegendDot color="#333" label="Available" outline />
+          </View>
+
+          <Link disabled={selectedSeats.length == 0} href={{
+            pathname: "/(stack)/OrderDetails",
+            params: {}
+          }} asChild>
+            <TouchableOpacity style={styles.actionBtn}>
+              <Text style={styles.actionText}>Proceed to Cash Out</Text>
+            </TouchableOpacity>
+          </Link>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -156,7 +217,7 @@ export default function ChooseSeat() {
 const InfoBlock = ({ icon, label, value }: { icon: React.ComponentProps<typeof Ionicons>['name']; label: string; value: string }) => (
   <View style={styles.infoBlock}>
     <View style={styles.infoLabelRow}>
-      <Ionicons name={icon} size={14} color="#556473" />
+      <Ionicons name={icon} size={14} color="#ccc" />
       <Text style={styles.infoLabel}>{label}</Text>
     </View>
     <Text style={styles.infoValue}>{value}</Text>
@@ -176,13 +237,12 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
   },
   topSection: {
+    position: "relative",
     backgroundColor: '#E2E2E2',
     borderBottomLeftRadius: 32,
     borderBottomRightRadius: 32,
-    paddingTop: 14,
-    paddingBottom: 24,
-    paddingHorizontal: 18,
-    marginBottom: 12,
+    overflow: "hidden",
+    marginBottom: 20
   },
   topIconsRow: {
     flexDirection: 'row',
@@ -238,6 +298,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     marginBottom: 24,
+    marginTop: 10
   },
   infoBlock: {
     width: '48%',
@@ -250,7 +311,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   infoLabel: {
-    color: '#7D7D7D',
+    color: '#ccc',
     fontSize: 11,
   },
   infoValue: {
@@ -296,7 +357,7 @@ const styles = StyleSheet.create({
   sideRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 10,
+    gap: 5,
     flexWrap: 'wrap',
     flex: 1,
   },
@@ -344,7 +405,7 @@ const styles = StyleSheet.create({
   actionBtn: {
     height: 62,
     borderRadius: 32,
-    backgroundColor: '#FF0000',
+    backgroundColor: Colors.PRIMARY.red,
     justifyContent: 'center',
     alignItems: 'center',
   },
