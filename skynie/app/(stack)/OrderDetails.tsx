@@ -33,7 +33,7 @@ export default function OrderDetails() {
       const body = {
         show_id: id,
         user_id: user.id,
-        total_amount: 1500,
+        total_amount: Number(ticketPrice) * selectedSeats.split(",").length,
         seats: selectedSeats.split(",").map((seatId) => {
           const row_label = seatId[0]; // "A1" -> "A"
           const seat_number = parseInt(seatId.slice(1)); // "A1" -> 1
@@ -126,7 +126,7 @@ export default function OrderDetails() {
       <View style={styles.footer}>
         <View style={styles.divider} />
         <TouchableOpacity style={styles.payBtn} onPress={bookSeats} disabled={loading}>
-          {loading && <ActivityIndicator color={Colors.PRIMARY.red} />}
+          {loading && <ActivityIndicator color={"white"} />}
           <Text style={styles.payBtnText}>Pay</Text>
         </TouchableOpacity>
       </View>
@@ -202,6 +202,8 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   payBtn: {
+    flexDirection: "row",
+    gap: 5,
     marginHorizontal: 10,
     backgroundColor: '#FF0000',
     height: 60,

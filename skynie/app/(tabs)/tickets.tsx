@@ -13,6 +13,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/src/supabase/client';
 import { GetUserBookingsResponse, UserBooking } from '@/supabase/api';
+import { Image } from 'expo-image';
 
 function getErrorMessage(error: unknown) {
   if (error instanceof Error) {
@@ -56,7 +57,7 @@ export default function MyTickets() {
       }
 
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (!session) {
         setError('You need to be logged in to view tickets');
         setBookings([]);
@@ -183,7 +184,7 @@ export default function MyTickets() {
               <View style={[styles.cutout, styles.cutoutTop]} />
               <View style={[styles.cutout, styles.cutoutBottom]} />
 
-              <View style={styles.posterPlaceholder} />
+              <Image source={{ uri: booking.moviePoster || "" }} style={styles.posterPlaceholder} />
 
               <View style={styles.ticketInfo}>
                 <Text style={styles.movieTitle}>{booking.movieTitle}</Text>

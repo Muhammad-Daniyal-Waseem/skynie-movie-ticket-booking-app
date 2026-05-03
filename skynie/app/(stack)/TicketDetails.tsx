@@ -3,6 +3,7 @@ import { StyleSheet, View, Text, ScrollView, TouchableOpacity } from 'react-nati
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Image } from 'expo-image';
 
 interface SeatInfo {
   rowLabel: string;
@@ -16,7 +17,7 @@ export default function TicketDetails() {
   // Parse the parameters
   const ticketData = useMemo(() => {
     const seats: SeatInfo[] = params.seats ? JSON.parse(params.seats as string) : [];
-    
+
     return {
       movieTitle: params.movieTitle || 'Unknown Movie',
       movieClassification: params.movieClassification || 'N/A',
@@ -45,18 +46,13 @@ export default function TicketDetails() {
 
   const seatsDisplay = useMemo(() => {
     if (ticketData.seats.length === 0) return 'N/A';
-    
-    // Group seats by row
-    const seatsByRow = ticketData.seats.reduce((acc, seat) => {
-      if (!acc[seat.rowLabel]) acc[seat.rowLabel] = [];
-      acc[seat.rowLabel].push(seat.seatNumber);
-      return acc;
-    }, {} as Record<string, number[]>);
 
-    return Object.entries(seatsByRow)
-      .map(([row, numbers]) => `Row ${row} (${numbers.join(',')})`)
+    return ticketData.seats
+      .map(item => `${item.row_label}${item.seat_number}`)
       .join(', ');
   }, [ticketData.seats]);
+
+  console.log(ticketData);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -77,7 +73,7 @@ export default function TicketDetails() {
             </View>
 
             <View style={styles.movieRow}>
-              <View style={styles.posterPlaceholder} />
+              <Image source={{ uri: ticketData?.moviePoster || "" }} style={styles.posterPlaceholder} />
               <View style={styles.movieMeta}>
                 <Text style={styles.movieName}>{ticketData.movieTitle}</Text>
                 <View style={styles.movieFlagsRow}>
@@ -130,7 +126,7 @@ export default function TicketDetails() {
           </View>
         </View>
 
-        <TouchableOpacity style={styles.actionButton} onPress={() => {}}>
+        <TouchableOpacity style={styles.actionButton} onPress={() => { }}>
           <Text style={styles.actionText}>Send Ticket</Text>
         </TouchableOpacity>
       </ScrollView>
