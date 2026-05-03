@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Text,
   View,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -15,19 +16,36 @@ import AuthDivider from '@/components/auth/AuthDivider';
 import SocialAuthButton from '@/components/auth/SocialAuthButton';
 import CustomButton from '@/components/common/CustomButton';
 import CustomInput from '@/components/common/CustomInput';
-import { signInWithEmailPassword, signUpWithEmailPassword } from '@/src/auth/service';
+import { createOrUpdateUserProfile, signInWithEmailPassword, signUpWithEmailPassword } from '@/src/auth/service';
 import { Colors } from '@/constants/color';
 import { hasMinPasswordLength, isValidEmail, showValidationToast } from '@/src/utils/validation';
 
 export default function SignUpScreen() {
   const router = useRouter();
+  type LanguageCode = 'en' | 'ja' | 'it' | 'de';
+
   const [email, setEmail] = React.useState('');
+  const [fullName, setFullName] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [confirmPassword, setConfirmPassword] = React.useState('');
+  const [languagePreference, setLanguagePreference] = React.useState<LanguageCode>('en');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  const languageOptions: { value: LanguageCode; label: string }[] = [
+    { value: 'en', label: 'English' },
+    { value: 'ja', label: 'Japanese' },
+    { value: 'it', label: 'Italian' },
+    { value: 'de', label: 'German' },
+  ];
 
   async function handleSignUp() {
     const trimmedEmail = email.trim();
+    const trimmedFullName = fullName.trim();
+
+    if (!trimmedFullName) {
+      showValidationToast('Please enter your full name');
+      return;
+    }
 
     if (!trimmedEmail || !isValidEmail(trimmedEmail)) {
       showValidationToast('Please add a valid email');
@@ -47,6 +65,10 @@ export default function SignUpScreen() {
     try {
       setIsSubmitting(true);
       const result = await signUpWithEmailPassword(trimmedEmail, password);
+
+      if (result.user?.id) {
+        await createOrUpdateUserProfile(result.user.id, trimmedFullName, languagePreference);
+      }
 
       if (result.session) {
         showValidationToast('Account created successfully');
@@ -85,6 +107,16 @@ export default function SignUpScreen() {
 
           <View style={styles.form}>
             <CustomInput
+              label="Full name"
+              placeholder="Text your full name"
+              value={fullName}
+              onChangeText={setFullName}
+              containerStyle={styles.inputGroup}
+              labelStyle={styles.inputLabel}
+              inputStyle={styles.input}
+            />
+
+            <CustomInput
               label="Email"
               placeholder="Text your email"
               keyboardType="email-address"
@@ -95,6 +127,27 @@ export default function SignUpScreen() {
               labelStyle={styles.inputLabel}
               inputStyle={styles.input}
             />
+
+            <Text style={styles.sectionLabel}>Language preference</Text>
+            <View style={styles.languageRow}>
+              {languageOptions.map((option) => (
+                <TouchableOpacity
+                  key={option.value}
+                  onPress={() => setLanguagePreference(option.value)}
+                  style={[
+                    styles.languageOption,
+                    languagePreference === option.value && styles.languageOptionActive,
+                  ]}>
+                  <Text
+                    style={[
+                      styles.languageOptionText,
+                      languagePreference === option.value && styles.languageOptionTextActive,
+                    ]}>
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
 
             <CustomInput
               label="Password"
@@ -214,5 +267,37 @@ const styles = StyleSheet.create({
     color: '#007DFC',
     fontSize: 14,
     fontWeight: '500',
+  },
+  sectionLabel: {
+    color: '#E5E5E5',
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 10,
+  },
+  languageRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 20,
+  },
+  languageOption: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: '#252525',
+    borderWidth: 1,
+    borderColor: '#3A3A3A',
+  },
+  languageOptionActive: {
+    backgroundColor: Colors.PRIMARY.red,
+    borderColor: Colors.PRIMARY.red,
+  },
+  languageOptionText: {
+    color: '#D8D8D8',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  languageOptionTextActive: {
+    color: '#FFFFFF',
   },
 });

@@ -14,7 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { Colors } from '@/constants/color'
-import { getCurrentSession, signOutUser } from '@/src/auth/service'
+import { getCurrentSession, getCurrentUserProfile, signOutUser } from '@/src/auth/service'
 import { showValidationToast } from '@/src/utils/validation'
 
 function ActionRow({
@@ -49,6 +49,8 @@ function ActionRow({
 export default function ProfileScreen() {
   const router = useRouter()
   const [email, setEmail] = useState<string | null>(null)
+  const [name, setName] = useState<string | null>(null)
+  const [language, setLanguage] = useState('English (US)')
   const [pushEnabled, setPushEnabled] = useState(true)
   const [promoEnabled, setPromoEnabled] = useState(false)
   const [isSigningOut, setIsSigningOut] = useState(false)
@@ -62,13 +64,36 @@ export default function ProfileScreen() {
         if (user) {
           setEmail(user.email ?? null)
         }
+
+        const profile = await getCurrentUserProfile()
+        setName(profile?.full_name ?? null)
+        setLanguage(languageLabel(profile?.language_preference))
       } catch {
         setEmail(null)
+        setName(null)
+        setLanguage('English (US)')
       }
     }
 
     loadSession()
   }, [])
+
+  function languageLabel(code?: string | null) {
+    switch (code) {
+      case 'ja':
+        return 'Japanese'
+      case 'it':
+        return 'Italian'
+      case 'de':
+        return 'German'
+      case 'es':
+        return 'Español'
+      case 'th':
+        return 'ไทย'
+      default:
+        return 'English'
+    }
+  }
 
   const handleLogout = React.useCallback(
     async () => {
@@ -96,16 +121,17 @@ export default function ProfileScreen() {
 
           <View style={styles.profileCard}>
             <View style={styles.avatar} />
+            <Text style={styles.profileName}>{name ?? 'Guest User'}</Text>
             <Text style={styles.profileEmail}>{email ?? 'No email available'}</Text>
           </View>
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>My Account</Text>
-            <ActionRow label="Personal information" icon="person-circle-outline" />
+            <ActionRow label="Full name" icon="person-circle-outline" value={name ?? '—'} />
             <ActionRow
               label="Language"
               icon="globe-outline"
-              value="English (US)"
+              value={language}
             />
             <ActionRow label="Privacy Policy" icon="shield-checkmark-outline" />
             <ActionRow label="Setting" icon="settings-outline" />
@@ -189,6 +215,12 @@ const styles = StyleSheet.create({
     borderRadius: 48,
     backgroundColor: '#3A3A3A',
     marginBottom: 14,
+  },
+  profileName: {
+    color: Colors.PRIMARY.white,
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 6,
   },
   profileEmail: {
     color: Colors.NEUTRAL.lightGrey,

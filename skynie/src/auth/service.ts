@@ -54,6 +54,48 @@ export async function signUpWithEmailPassword(email: string, password: string) {
   return data;
 }
 
+export async function createOrUpdateUserProfile(userId: string, fullName: string, languagePreference: string) {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('profiles')
+    .upsert(
+      {
+        id: userId,
+        full_name: fullName,
+        language_preference: languagePreference,
+      },
+      { onConflict: 'id' }
+    );
+
+  if (error) {
+    throw new Error(getErrorMessage(error, 'Unable to save profile.'));
+  }
+
+  return data;
+}
+
+export async function getCurrentUserProfile() {
+  const client = getSupabaseClient();
+  const session = await getCurrentSession();
+  const userId = session?.user?.id;
+
+  if (!userId) {
+    return null;
+  }
+
+  const { data, error } = await client
+    .from('profiles')
+    .select('full_name, language_preference')
+    .eq('id', userId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(getErrorMessage(error, 'Unable to load profile.'));
+  }
+
+  return data;
+}
+
 export async function completeAuthFromUrl(url: string) {
   const client = getSupabaseClient();
   const params = getUrlParams(url);
