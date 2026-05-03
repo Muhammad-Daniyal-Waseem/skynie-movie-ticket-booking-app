@@ -129,6 +129,15 @@ export async function completeAuthFromUrl(url: string) {
   };
 }
 
+export async function sendPasswordResetEmail(email: string) {
+  const client = getSupabaseClient();
+  const { error } = await client.auth.resetPasswordForEmail(email);
+
+  if (error) {
+    throw new Error(getErrorMessage(error, 'Unable to send password reset email.'));
+  }
+}
+
 export async function sendRecoveryOtp(email: string) {
   const client = getSupabaseClient();
   const { error } = await client.auth.signInWithOtp({
@@ -148,7 +157,7 @@ export async function verifyRecoveryOtp(email: string, token: string) {
   const { data, error } = await client.auth.verifyOtp({
     email,
     token,
-    type: 'email',
+    type: 'recovery',
   });
 
   if (error) {
