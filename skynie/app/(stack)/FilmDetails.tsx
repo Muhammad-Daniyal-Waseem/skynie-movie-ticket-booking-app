@@ -111,7 +111,7 @@ export default function FilmDetails() {
 
       {/* Fixed Bottom Button */}
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.buyBtn}>
+        <TouchableOpacity style={styles.buyBtn} onPress={() => router.push('BookTicket')}>
           <Text style={styles.buyBtnText}>Buy ticket</Text>
         </TouchableOpacity>
       </View>

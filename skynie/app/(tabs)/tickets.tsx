@@ -45,7 +45,7 @@ export default function MyTickets() {
 
       <ScrollView contentContainerStyle={styles.listContent}>
         {tickets.map((item) => (
-          <View key={item.id} style={styles.ticketCard}>
+          <TouchableOpacity key={item.id} style={styles.ticketCard} onPress={() => router.push('/TicketDetails')}>
             {/* The "Punch" cutouts */}
             <View style={[styles.cutout, styles.cutoutTop]} />
             <View style={[styles.cutout, styles.cutoutBottom]} />
@@ -73,7 +73,7 @@ export default function MyTickets() {
 
             {/* Right side barcode placeholder */}
             <View style={styles.barcodePlaceholder} />
-          </View>
+          </TouchableOpacity>
         ))}
       </ScrollView>
     </SafeAreaView>
