@@ -42,7 +42,7 @@ export default function index() {
         setOurPick(data.ourPick);
       }
     } catch (err) {
-      console.error('Failed to fetch home data:', err);
+      console.error('Failed to home data:', err);
     }
   };
 

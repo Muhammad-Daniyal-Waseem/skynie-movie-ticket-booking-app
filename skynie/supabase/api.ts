@@ -25,3 +25,8 @@ export interface SearchDataResponse {
   cinemas: CinemaWithHallTypes[];
   allHallTypes: string[];
 }
+
+export interface GetMovieByIdResponse {
+  movie: MovieWithGenres;
+  relatedMovies: MovieWithGenres[];
+}
