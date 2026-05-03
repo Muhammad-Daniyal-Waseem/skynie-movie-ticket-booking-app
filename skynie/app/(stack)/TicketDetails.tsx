@@ -1,11 +1,62 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+interface SeatInfo {
+  rowLabel: string;
+  seatNumber: number;
+}
 
 export default function TicketDetails() {
   const router = useRouter();
+  const params = useLocalSearchParams();
+
+  // Parse the parameters
+  const ticketData = useMemo(() => {
+    const seats: SeatInfo[] = params.seats ? JSON.parse(params.seats as string) : [];
+    
+    return {
+      movieTitle: params.movieTitle || 'Unknown Movie',
+      movieClassification: params.movieClassification || 'N/A',
+      cinemaName: params.cinemaName || 'Unknown Cinema',
+      hallName: params.hallName || 'N/A',
+      hallType: params.hallType || '',
+      startTime: params.startTime ? new Date(params.startTime as string) : new Date(),
+      totalAmount: parseFloat(params.totalAmount as string) || 0,
+      basePrice: parseFloat(params.basePrice as string) || 0,
+      seats: seats,
+    };
+  }, [params]);
+
+  const formatDate = (date: Date) => {
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}.${month}.${year}`;
+  };
+
+  const formatTime = (date: Date) => {
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
+
+  const seatsDisplay = useMemo(() => {
+    if (ticketData.seats.length === 0) return 'N/A';
+    
+    // Group seats by row
+    const seatsByRow = ticketData.seats.reduce((acc, seat) => {
+      if (!acc[seat.rowLabel]) acc[seat.rowLabel] = [];
+      acc[seat.rowLabel].push(seat.seatNumber);
+      return acc;
+    }, {} as Record<string, number[]>);
+
+    return Object.entries(seatsByRow)
+      .map(([row, numbers]) => `Row ${row} (${numbers.join(',')})`)
+      .join(', ');
+  }, [ticketData.seats]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -22,21 +73,20 @@ export default function TicketDetails() {
           <View style={styles.cardInner}>
             <View style={styles.topBadgeRow}>
               <View style={styles.sqaureBadge} />
-              <Text style={styles.locationText}>Stars (90° Mall)</Text>
+              <Text style={styles.locationText}>{ticketData.cinemaName}</Text>
             </View>
 
             <View style={styles.movieRow}>
               <View style={styles.posterPlaceholder} />
               <View style={styles.movieMeta}>
-                <Text style={styles.movieName}>Oppenheimer</Text>
+                <Text style={styles.movieName}>{ticketData.movieTitle}</Text>
                 <View style={styles.movieFlagsRow}>
                   <View style={styles.ageBadge}>
-                    <Text style={styles.ageText}>+13</Text>
+                    <Text style={styles.ageText}>{ticketData.movieClassification}</Text>
                   </View>
-                  <View style={styles.languageBadge}>
-                    <Text style={styles.languageText}>EN</Text>
-                  </View>
-                  <Text style={styles.screenText}>ScreenX Dolby Atmos</Text>
+                  {ticketData.hallType && (
+                    <Text style={styles.screenText}>{ticketData.hallType}</Text>
+                  )}
                 </View>
               </View>
             </View>
@@ -44,15 +94,15 @@ export default function TicketDetails() {
             <View style={styles.infoRowTop}>
               <View style={styles.infoBlock}>
                 <Text style={styles.infoLabel}>Amount</Text>
-                <Text style={styles.infoValue}>3 Persind</Text>
+                <Text style={styles.infoValue}>{ticketData.seats.length} Ticket{ticketData.seats.length !== 1 ? 's' : ''}</Text>
               </View>
               <View style={styles.infoBlockCenter}>
                 <Text style={styles.infoLabel}>Cost</Text>
-                <Text style={styles.infoValue}>59.98 USD</Text>
+                <Text style={styles.infoValue}>${ticketData.totalAmount.toFixed(2)}</Text>
               </View>
               <View style={styles.infoBlock}>
                 <Text style={styles.infoLabel}>Hall</Text>
-                <Text style={styles.infoValue}>4th</Text>
+                <Text style={styles.infoValue}>{ticketData.hallName}</Text>
               </View>
             </View>
 
@@ -61,15 +111,15 @@ export default function TicketDetails() {
             <View style={styles.infoRowBottom}>
               <View style={styles.bottomInfoBlock}>
                 <Text style={styles.infoLabel}>Seats</Text>
-                <Text style={styles.infoValue}>Row E (5,6,7)</Text>
+                <Text style={styles.infoValue}>{seatsDisplay}</Text>
               </View>
               <View style={styles.bottomInfoBlock}>
                 <Text style={styles.infoLabel}>Date</Text>
-                <Text style={styles.infoValue}>13.04.2025</Text>
+                <Text style={styles.infoValue}>{formatDate(ticketData.startTime)}</Text>
               </View>
               <View style={styles.bottomInfoBlock}>
                 <Text style={styles.infoLabel}>Time</Text>
-                <Text style={styles.infoValue}>22:15</Text>
+                <Text style={styles.infoValue}>{formatTime(ticketData.startTime)}</Text>
               </View>
             </View>
 
