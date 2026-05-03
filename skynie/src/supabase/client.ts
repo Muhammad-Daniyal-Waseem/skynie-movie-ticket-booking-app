@@ -1,4 +1,5 @@
 import "react-native-url-polyfill/auto";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@supabase/supabase-js";
 
@@ -16,9 +17,9 @@ if (!isSupabaseConfigured) {
 export const supabase: SupabaseClient | null = isSupabaseConfigured
   ? createClient(supabaseUrl as string, supabaseAnonKey as string, {
       auth: {
-        // Keep auth stateless in Expo Go to avoid native storage crashes.
-        autoRefreshToken: false,
-        persistSession: false,
+        storage: AsyncStorage,
+        autoRefreshToken: true,
+        persistSession: true,
         detectSessionInUrl: false,
       },
     })

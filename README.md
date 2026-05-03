@@ -52,3 +52,8 @@ Detailed project documentation (including design explanation, workflow, and impl
 
 
 
+
+supabase link --project-ref ppkbnwciyoewibofopmq
+supabase db reset --linked
+supabase functions deploy get-home-data
+npx supabase gen types typescript --project-id ppkbnwciyoewibofopmq > skynie/supabase/types.ts

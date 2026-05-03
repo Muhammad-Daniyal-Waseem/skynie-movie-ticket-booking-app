@@ -9,7 +9,7 @@ export const fetchTestData = async () => {
     }
 
     const { data, error } = await supabase
-      .from("test")
+      .from("test_table")
       .select("*");
 
     if (error) {
