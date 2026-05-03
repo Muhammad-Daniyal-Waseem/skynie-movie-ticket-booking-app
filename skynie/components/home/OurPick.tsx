@@ -5,22 +5,13 @@ import { Ionicons } from '@expo/vector-icons'
 import { MovieWithGenres } from '@/supabase/api'
 import { Colors } from '@/constants/color'
 import { Link } from 'expo-router'
+import { getDuration } from '@/utils'
 
 export default function OurPick({ data }: { data: MovieWithGenres | null }) {
 
   if (!data) {
     return null
   }
-
-  const getDuration = () => {
-    const totalMinutes = data.duration_minutes;
-    if (!totalMinutes) return 'N/A';
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-
-    // Returns format: 1h 49m
-    return `${hours}h ${minutes}m`;
-  };
 
   return (
     <Link asChild href={{ pathname: "/(stack)/FilmDetails", params: { id: data.id } }}>
@@ -31,7 +22,7 @@ export default function OurPick({ data }: { data: MovieWithGenres | null }) {
         />
         <View style={{ backgroundColor: "rgba(87, 87, 87, 0.7)", width: "100%", position: "absolute", bottom: 0, padding: 10 }}>
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 4, marginBottom: 16 }}>
-            <Text style={{ color: "white" }}>{data.genres?.map(g => g.name).join(" • ")} • {getDuration()}</Text>
+            <Text style={{ color: "white" }}>{data.genres?.map(g => g.name).join(" • ")} • {getDuration(data.duration_minutes)}</Text>
             <Text style={{ color: "white", fontWeight: "bold" }}>{data.rating_imdb || 'N/A'}/10 IMDb</Text>
           </View>
 

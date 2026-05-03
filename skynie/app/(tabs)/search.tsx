@@ -18,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import * as Location from 'expo-location';
 import Loader from '@/components/Loader'
 import { useRouter } from 'expo-router'
+import { EmptyState } from '@/components/empty-state'
 
 export default function SearchScreen() {
   const [allCinemas, setAllCinemas] = useState<CinemaWithHallTypes[]>([]);
@@ -230,6 +231,8 @@ export default function SearchScreen() {
           </TouchableOpacity>
         )}
       />
+
+      {filteredCinemas.length === 0 && (<EmptyState message='No Cinema Found' />)}
 
     </SafeAreaView>
   )
