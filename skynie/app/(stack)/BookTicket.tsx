@@ -1,11 +1,16 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/color';
-
-const filmTypes = ['IMAX', 'GOLD', 'ScreenX', '4D MAX', '3D', '2D'];
+import { supabase } from '@/src/supabase/client';
+import { GetMovieShowsResponse } from '@/supabase/api';
+import Loader from '@/components/Loader';
+import { EmptyState } from '@/components/empty-state';
+import { formatTimeHHMM, getDuration } from '@/utils';
+import * as WebBrowser from 'expo-web-browser';
+import { Image } from 'expo-image';
 
 const showtimes = [
   { id: '1', time: '10:15', hall: 'Hall 1', available: 53, total: 80, type: 'ScreenX', audio: 'Dolby Atmos' },
@@ -25,18 +30,83 @@ const getDateLabel = (date: Date) => {
 };
 
 export default function BookTicket() {
+  const { id } = useLocalSearchParams();
   const router = useRouter();
+
+  const [shows, setShows] = useState<GetMovieShowsResponse['shows']>([]);
+  const [movie, setMovie] = useState<GetMovieShowsResponse['movie'] | null>(null);
+
+  const [loading, setLoading] = useState(false);
+
   const [selectedDateIndex, setSelectedDateIndex] = useState(0);
-  const [selectedTypeIndex, setSelectedTypeIndex] = useState(2);
   const [selectedShowtimeId, setSelectedShowtimeId] = useState(showtimes[0].id);
 
   const dates = useMemo(() => {
-    return Array.from({ length: 10 }).map((_, index) => {
+    return Array.from({ length: 30 }).map((_, index) => {
       const date = new Date();
       date.setDate(date.getDate() + index);
       return { id: `${index}`, weekday: getWeekdayLabel(date), date: getDateLabel(date) };
     });
   }, []);
+
+  const getShowsData = async () => {
+    try {
+      if (!supabase || !id) return;
+      const { data, error } = await supabase.functions.invoke<GetMovieShowsResponse>(`get-movie-shows?id=${id}`, {
+        method: 'GET',
+      });
+
+      if (error) {
+        console.error('Edge Function Error:', error);
+        throw error;
+      }
+
+      if (data) {
+        setMovie(data.movie)
+        setShows(data.shows)
+      }
+    } catch (err) {
+      console.error('Failed to data:', err);
+    }
+  };
+
+  useEffect(() => {
+    setLoading(true)
+    getShowsData().then(() => setLoading(false));
+  }, [id])
+
+  const getDateKey = (date: string | Date) => {
+    const d = new Date(date);
+
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
+      d.getDate()
+    ).padStart(2, '0')}`;
+  };
+
+  const isPastShow = (startTime: string) => {
+    return new Date(startTime).getTime() < Date.now();
+  };
+
+  const selectedDateShows = useMemo(() => {
+    const selectedDate = new Date();
+    selectedDate.setDate(selectedDate.getDate() + selectedDateIndex);
+    return shows.filter(item => {
+      return getDateKey(new Date(item.start_time)) === getDateKey(selectedDate)
+    })
+  }, [selectedDateIndex, shows])
+
+  const handleOpenTrailer = async () => {
+    const url = movie?.trailer_url;
+    if (url) {
+      await WebBrowser.openBrowserAsync(url);
+    }
+  };
+
+  if (loading)
+    return <Loader />
+
+  if (!movie)
+    return <EmptyState message='Movie not found' />
 
   return (
     <SafeAreaView style={styles.container}>
@@ -67,34 +137,17 @@ export default function BookTicket() {
           })}
         </ScrollView>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterList}>
-          {filmTypes.map((type, index) => {
-            const active = selectedTypeIndex === index;
-            return (
-              <TouchableOpacity
-                key={type}
-                style={[styles.filterChip, active && styles.activeFilterChip]}
-                onPress={() => setSelectedTypeIndex(index)}
-              >
-                <Text style={[styles.filterText, active && styles.activeFilterText]}>{type}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-
         <View style={styles.movieCard}>
-          <View style={styles.posterPlaceholder} />
+          <Image source={{ uri: movie.poster_url || "" }} style={styles.posterPlaceholder} />
           <View style={styles.movieDetails}>
-            <Text style={styles.movieGenre}>Biography • PG-13 • 1h 56m</Text>
-            <Text style={styles.movieTitle}>Oppenheimer</Text>
+            <Text style={styles.movieGenre}>{movie.genres?.map(g => g.name).join(" • ")} • {getDuration(movie.duration_minutes)}</Text>
+            <Text style={styles.movieTitle}>{movie.title}</Text>
             <View style={styles.badgeRow}>
-              <View style={[styles.badge, { backgroundColor: '#4CAF50' }]}>
-                <Text style={styles.badgeText}>+13</Text>
-              </View>
-              <View style={styles.outlineBadge}><Text style={styles.badgeText}>EN</Text></View>
-              <View style={styles.outlineBadge}><Text style={styles.badgeText}>Sub EN/SP</Text></View>
+              {movie.languages?.map(lang => (
+                <View key={lang} style={styles.outlineBadge}><Text style={styles.badgeText}>{lang}</Text></View>
+              ))}
             </View>
-            <TouchableOpacity style={styles.trailerBtn}>
+            <TouchableOpacity style={styles.trailerBtn} onPress={handleOpenTrailer}>
               <Ionicons name="play" size={16} color="black" />
               <Text style={styles.trailerText}>Trailer</Text>
             </TouchableOpacity>
@@ -102,15 +155,16 @@ export default function BookTicket() {
         </View>
 
         <Text style={styles.sectionTitle}>Select Showtime</Text>
+        {selectedDateShows.length == 0 && <EmptyState message='No show found' />}
         <View style={styles.cardsGrid}>
-          {showtimes.map((show) => {
+          {selectedDateShows.map((show) => {
             const active = selectedShowtimeId === show.id;
-            const disabled = !!show.disabled;
+            const disabled = (show.booked_seats_count == show.halls.total_capacity) || (isPastShow(show.start_time));
             const availableColor = disabled
               ? '#555'
-              : show.available < 10
-              ? '#EE5959'
-              : '#D9D900';
+              : show.booked_seats_count < 10
+                ? '#EE5959'
+                : '#D9D900';
 
             return (
               <TouchableOpacity
@@ -120,14 +174,14 @@ export default function BookTicket() {
                 disabled={disabled}
               >
                 <View style={styles.cardHeader}>
-                  <Text style={styles.cardType}>{show.type}</Text>
-                  <Text style={styles.cardAudio}>{show.audio}</Text>
+                  <Text style={styles.cardType}>{show.halls.cinemas.name}</Text>
+                  <Text style={styles.cardAudio}>{show.halls.hall_type}</Text>
                 </View>
-                <Text style={[styles.showtimeText, disabled && styles.disabledText, disabled && styles.lineThrough]}>{show.time}</Text>
+                <Text style={[styles.showtimeText, disabled && styles.disabledText, disabled && styles.lineThrough]}>{formatTimeHHMM(show.start_time)}</Text>
                 <View>
-                  <Text style={[styles.hallText, disabled && styles.disabledText]}>{show.hall}</Text>
+                  <Text style={[styles.hallText, disabled && styles.disabledText]}>{show.halls.hall_name}</Text>
                   <Text style={[styles.availabilityText, { color: availableColor }]}>
-                    {show.available > 0 ? `${show.available} Available / ${show.total}` : `${show.total} / ${show.total}`}
+                    {show.booked_seats_count > 0 ? `${show.booked_seats_count} Available / ${show.halls.total_capacity}` : `${show.booked_seats_count} / ${show.halls.total_capacity}`}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -204,7 +258,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#1F1F1F',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 18,
+    borderRadius: 6,
     marginRight: 12,
   },
   activeFilterChip: {
@@ -223,11 +277,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#1F1F1F',
     borderRadius: 24,
     padding: 16,
-    marginBottom: 24,
+    marginVertical: 24,
   },
   posterPlaceholder: {
-    width: 100,
-    height: 140,
+    aspectRatio: "9/16",
+    height: "auto",
     borderRadius: 18,
     backgroundColor: '#333',
   },
@@ -314,13 +368,12 @@ const styles = StyleSheet.create({
     opacity: 0.45,
   },
   cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    gap: 2,
     marginBottom: 20,
   },
   cardType: {
     color: '#aaa',
-    fontSize: 11,
+    fontSize: 14,
     fontWeight: '700',
   },
   cardAudio: {
